@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ARO HPM">
+<meta name="theme-color" content="#0c4a6e">
+<meta name="description" content="Calendario de atenciones - Policlinico ARO Hospital Puerto Montt">
+<title>ARO - Puerto Montt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; }
+body { font-family: 'DM Sans', system-ui, sans-serif; background: #f0f9ff; }
+:root {
+  --primary: #0e7490; --primary-dark: #0c4a6e; --primary-light: #e0f2fe;
+  --libre-bg: #f0fdf4; --libre-border: #86efac; --libre-text: #166534; --libre-dot: #22c55e;
+  --ocupado-bg: #eff6ff; --ocupado-border: #93c5fd; --ocupado-text: #1e40af; --ocupado-dot: #3b82f6;
+  --bloqueado-bg: #fff1f2; --bloqueado-border: #fda4af; --bloqueado-text: #9f1239; --bloqueado-dot: #f43f5e;
+}
+#app { max-width: 480px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+.header { background: var(--primary-dark); color: white; padding: 16px 20px 0; flex-shrink: 0; }
+.header-sub  { font-size: 10px; opacity: .55; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 2px; }
+.header-title{ font-size: 17px; font-weight: 800; line-height: 1.2; }
+.header-meta { font-size: 11px; opacity: .45; margin-top: 3px; }
+.week-tabs { display: flex; gap: 8px; margin-top: 14px; }
+.week-tab { flex: 1; padding: 9px 0; border-radius: 8px 8px 0 0; border: none; cursor: pointer; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; transition: all .2s; }
+.week-tab.active   { background: #f0f9ff; color: var(--primary-dark); }
+.week-tab.inactive { background: rgba(255,255,255,.09); color: rgba(255,255,255,.4); }
+.day-tabs { background: white; border-bottom: 1px solid #e0f2fe; display: flex; flex-shrink: 0; }
+.day-tab { flex: 1; padding: 10px 4px 8px; border: none; background: transparent; cursor: pointer; border-bottom: 3px solid transparent; transition: all .15s; }
+.day-tab.active { border-bottom-color: var(--primary); }
+.day-short { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: #94a3b8; }
+.day-tab.active .day-short { color: var(--primary); }
+.day-num { font-size: 14px; font-weight: 700; color: #cbd5e1; margin-top: 2px; }
+.day-tab.active .day-num { color: var(--primary-dark); }
+.day-num.today { background: #e0f2fe; color: var(--primary); border-radius: 4px; padding: 0 4px; }
+.view-toggle { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
+.view-tab { flex: 1; padding: 8px 0; font-size: 12px; font-weight: 600; border: none; background: transparent; cursor: pointer; color: #94a3b8; border-bottom: 2px solid transparent; font-family: inherit; }
+.view-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+.box-section { background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 10px 14px; display: flex; gap: 8px; flex-shrink: 0; }
+.box-tab { flex: 1; padding: 9px 8px; border-radius: 10px; border: 2px solid #e2e8f0; background: white; cursor: pointer; text-align: left; transition: all .15s; }
+.box-tab.active { border-color: var(--primary); background: var(--primary-light); }
+.box-tab-name  { font-size: 12px; font-weight: 700; color: #94a3b8; }
+.box-tab.active .box-tab-name { color: var(--primary); }
+.box-tab-count { font-size: 10px; color: #94a3b8; margin-top: 1px; }
+.box-progress  { height: 3px; background: #e2e8f0; border-radius: 2px; margin-top: 5px; overflow: hidden; }
+.box-progress-fill { height: 100%; background: var(--primary); border-radius: 2px; transition: width .3s; }
+.slots-container { flex: 1; overflow-y: auto; padding: 10px 14px 24px; display: flex; flex-direction: column; gap: 5px; -webkit-overflow-scrolling: touch; }
+.slot-btn { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; border: 1.5px solid; background: none; cursor: pointer; text-align: left; width: 100%; font-family: inherit; transition: transform .1s; flex-shrink: 0; }
+.slot-btn:active { transform: scale(.99); }
+.slot-btn.libre     { background: var(--libre-bg);     border-color: var(--libre-border); }
+.slot-btn.ocupado   { background: var(--ocupado-bg);   border-color: var(--ocupado-border); }
+.slot-btn.bloqueado { background: var(--bloqueado-bg); border-color: var(--bloqueado-border); }
+.slot-time { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; min-width: 42px; }
+.slot-btn.libre     .slot-time { color: var(--libre-text); }
+.slot-btn.ocupado   .slot-time { color: var(--ocupado-text); }
+.slot-btn.bloqueado .slot-time { color: var(--bloqueado-text); }
+.slot-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.slot-btn.libre     .slot-dot { background: var(--libre-dot); }
+.slot-btn.ocupado   .slot-dot { background: var(--ocupado-dot); }
+.slot-btn.bloqueado .slot-dot { background: var(--bloqueado-dot); }
+.slot-info { flex: 1; min-width: 0; }
+.slot-patient { font-size: 13px; font-weight: 600; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot-sub     { font-size: 11px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.slot-label   { font-size: 13px; opacity: .6; }
+.slot-btn.libre     .slot-label { color: var(--libre-text); }
+.slot-btn.ocupado   .slot-label { color: var(--ocupado-text); }
+.slot-btn.bloqueado .slot-label { color: var(--bloqueado-text); }
+.slot-arrow { font-size: 16px; color: #cbd5e1; }
+.overview-container { flex: 1; overflow-y: auto; padding: 12px 14px 24px; -webkit-overflow-scrolling: touch; display: none; }
+.ov-box-label { font-size: 12px; font-weight: 700; color: #64748b; margin: 14px 0 6px; letter-spacing: .5px; text-transform: uppercase; }
+.ov-box-label:first-child { margin-top: 0; }
+.overview-grid { overflow-x: auto; }
+.ov-header { display: grid; grid-template-columns: 42px repeat(5,1fr); gap: 3px; margin-bottom: 4px; }
+.ov-header div { font-size: 9px; font-weight: 700; color: #94a3b8; text-align: center; letter-spacing: .5px; }
+.ov-row  { display: grid; grid-template-columns: 42px repeat(5,1fr); gap: 3px; margin-bottom: 3px; }
+.ov-time { font-family: 'DM Mono', monospace; font-size: 9px; color: #94a3b8; display: flex; align-items: center; }
+.ov-cell { height: 20px; border-radius: 4px; border: 1px solid; cursor: pointer; transition: opacity .1s; }
+.ov-cell:active     { opacity: .7; }
+.ov-cell.libre      { background: var(--libre-bg);     border-color: var(--libre-border); }
+.ov-cell.ocupado    { background: var(--ocupado-bg);   border-color: var(--ocupado-border); }
+.ov-cell.bloqueado  { background: var(--bloqueado-bg); border-color: var(--bloqueado-border); }
+.legend { display: flex; gap: 14px; padding: 6px 14px 10px; background: #f8fafc; border-top: 1px solid #e2e8f0; flex-shrink: 0; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #64748b; font-weight: 600; }
+.legend-dot  { width: 8px; height: 8px; border-radius: 50%; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: flex-end; z-index: 200; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.modal-overlay.open { display: flex; animation: fadeIn .2s; }
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+.modal-sheet { background: white; border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; margin: 0 auto; padding: 0 20px 40px; max-height: 90vh; overflow-y: auto; animation: slideUp .25s cubic-bezier(.32,.72,0,1); -webkit-overflow-scrolling: touch; }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-handle   { width: 36px; height: 4px; background: #e2e8f0; border-radius: 2px; margin: 14px auto 20px; }
+.modal-header   { margin-bottom: 20px; }
+.modal-context  { font-size: 11px; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+.modal-time     { font-family: 'DM Mono', monospace; font-size: 28px; font-weight: 500; color: var(--primary-dark); line-height: 1; }
+.modal-time-end { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+.field-group { margin-bottom: 16px; }
+.field-label { font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 1px; text-transform: uppercase; display: block; margin-bottom: 7px; }
+.status-row { display: flex; gap: 8px; }
+.status-opt { flex: 1; padding: 9px 6px; border-radius: 9px; border: 2px solid #e2e8f0; background: white; cursor: pointer; font-size: 12px; font-weight: 700; color: #94a3b8; font-family: inherit; transition: all .15s; }
+.status-opt.libre.sel     { border-color: var(--libre-dot);     background: var(--libre-bg);     color: var(--libre-text); }
+.status-opt.ocupado.sel   { border-color: var(--ocupado-dot);   background: var(--ocupado-bg);   color: var(--ocupado-text); }
+.status-opt.bloqueado.sel { border-color: var(--bloqueado-dot); background: var(--bloqueado-bg); color: var(--bloqueado-text); }
+.field-input { width: 100%; padding: 11px 13px; border-radius: 9px; border: 1.5px solid #e2e8f0; font-size: 14px; font-family: inherit; outline: none; transition: border-color .15s; background: white; -webkit-appearance: none; }
+.field-input:focus { border-color: var(--primary); }
+.field-input::placeholder { color: #cbd5e1; }
+textarea.field-input { resize: none; }
+.modal-actions { display: flex; gap: 10px; margin-top: 22px; }
+.btn-clear { flex: 1; padding: 13px; border-radius: 11px; border: 1.5px solid #e2e8f0; background: white; color: #94a3b8; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.btn-save  { flex: 2; padding: 13px; border-radius: 11px; border: none; background: var(--primary); color: white; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background .15s; }
+.btn-save:hover  { background: var(--primary-dark); }
+.btn-save:active { transform: scale(.99); }
+.toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: var(--primary-dark); color: white; padding: 8px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; z-index: 300; pointer-events: none; opacity: 0; transition: opacity .2s; white-space: nowrap; }
+.toast.show { opacity: 1; }
+.loading-msg { display: flex; align-items: center; justify-content: center; padding: 40px; color: #94a3b8; font-size: 14px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="header-sub">Hospital de Puerto Montt</div>
+    <div class="header-title">Policlinico Alto Riesgo Obstetrico</div>
+    <div class="header-meta">08:00 - 13:00  &middot;  20 min/paciente  &middot;  3 boxes</div>
+    <div class="week-tabs">
+      <button class="week-tab active"   onclick="switchWeek(0)">Semana Actual</button>
+      <button class="week-tab inactive" onclick="switchWeek(1)">Proxima Semana</button>
+    </div>
+  </div>
+  <div class="day-tabs" id="day-tabs"></div>
+  <div class="view-toggle">
+    <button class="view-tab active" id="vt-agenda"  onclick="switchView('agenda')">Agenda</button>
+    <button class="view-tab"        id="vt-resumen" onclick="switchView('resumen')">Resumen semanal</button>
+  </div>
+  <div class="box-section"        id="box-section"></div>
+  <div class="slots-container"    id="slots-container"></div>
+  <div class="overview-container" id="overview-container"></div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--libre-dot)"></div>Libre</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--ocupado-dot)"></div>Ocupado</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--bloqueado-dot)"></div>Bloqueado</div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal" onclick="closeModalOutside(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-context"  id="modal-ctx"></div>
+      <div class="modal-time"     id="modal-time"></div>
+      <div class="modal-time-end" id="modal-end"></div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Estado</label>
+      <div class="status-row">
+        <button class="status-opt libre"     id="opt-libre"     onclick="selStatus('libre')">Libre</button>
+        <button class="status-opt ocupado"   id="opt-ocupado"   onclick="selStatus('ocupado')">Ocupado</button>
+        <button class="status-opt bloqueado" id="opt-bloqueado" onclick="selStatus('bloqueado')">Bloqueado</button>
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Nombre Paciente</label>
+      <input class="field-input" id="f-patient" type="text" placeholder="Apellido, Nombre" autocomplete="off" autocorrect="off">
+    </div>
+    <div class="field-group">
+      <label class="field-label">RUT</label>
+      <input class="field-input" id="f-rut" type="text" placeholder="12.345.678-9" autocomplete="off" inputmode="numeric">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Observaciones</label>
+      <textarea class="field-input" id="f-note" rows="2" placeholder="Control, derivacion, urgencia..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-clear" onclick="clearSlot()">Limpiar</button>
+      <button class="btn-save"  onclick="saveSlot()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Constantes
+var SLOTS = [];
+for (var _i = 0; _i < 15; _i++) {
+  var _m = 8 * 60 + _i * 20;
+  var _h = Math.floor(_m / 60);
+  var _min = _m % 60;
+  SLOTS.push((_h < 10 ? '0' : '') + _h + ':' + (_min < 10 ? '0' : '') + _min);
+}
+
+var DAYS = [
+  {s:'LUN', f:'Lunes'},
+  {s:'MAR', f:'Martes'},
+  {s:'MIE', f:'Miercoles'},
+  {s:'JUE', f:'Jueves'},
+  {s:'VIE', f:'Viernes'}
+];
+
+var BOXES = ['Box 1', 'Box 2', 'Box 3'];
+var ST_LBL = {libre:'Libre', ocupado:'Ocupado', bloqueado:'Bloqueado'};
+
+// ── Estado
+var weekOff = 0;
+var selDay  = clampDay(new Date().getDay() - 1);
+var selBox  = 0;
+var curView = 'agenda';
+var weekData = null;
+var modalState = null;
+var formSt = 'libre';
+var toastTimer = null;
+
+function clampDay(d) {
+  if (d < 0) return 0;
+  if (d > 4) return 4;
+  return d;
+}
+
+// ── Fechas
+function getMonday(off) {
+  var d = new Date();
+  var day = d.getDay();
+  var diff = (day === 0) ? -6 : (1 - day);
+  d.setDate(d.getDate() + diff + off * 7);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function dayDate(mon, i) {
+  var d = new Date(mon.getTime());
+  d.setDate(d.getDate() + i);
+  return d;
+}
+
+function isToday(mon, i) {
+  var d = dayDate(mon, i);
+  var t = new Date();
+  return d.getDate() === t.getDate() &&
+         d.getMonth() === t.getMonth() &&
+         d.getFullYear() === t.getFullYear();
+}
+
+function weekKey(mon) {
+  return 'aro-hpm:' + mon.toISOString().slice(0, 10);
+}
+
+// ── Datos
+function emptySlot() {
+  return {status:'libre', patient:'', rut:'', note:''};
+}
+
+function emptyWeek() {
+  var w = {};
+  for (var d = 0; d < 5; d++) {
+    w[d] = {};
+    for (var b = 0; b < 3; b++) {
+      w[d][b] = [];
+      for (var s = 0; s < 15; s++) {
+        w[d][b].push(emptySlot());
+      }
+    }
+  }
+  return w;
+}
+
+function loadWeek() {
+  weekData = null;
+  renderAll();
+  var key = weekKey(getMonday(weekOff));
+  try {
+    var raw = localStorage.getItem(key);
+    weekData = raw ? JSON.parse(raw) : emptyWeek();
+  } catch(e) {
+    weekData = emptyWeek();
+  }
+  renderAll();
+}
+
+function persistWeek() {
+  try {
+    localStorage.setItem(weekKey(getMonday(weekOff)), JSON.stringify(weekData));
+  } catch(e) {}
+}
+
+function getSlot(d, b, s) {
+  if (!weekData) return emptySlot();
+  if (!weekData[d]) return emptySlot();
+  if (!weekData[d][b]) return emptySlot();
+  var sl = weekData[d][b][s];
+  if (!sl) return emptySlot();
+  return sl;
+}
+
+function countBox(d, b) {
+  var c = {libre:0, ocupado:0, bloqueado:0};
+  if (!weekData || !weekData[d] || !weekData[d][b]) return c;
+  for (var i = 0; i < weekData[d][b].length; i++) {
+    var st = weekData[d][b][i].status || 'libre';
+    if (c[st] !== undefined) c[st]++;
+  }
+  return c;
+}
+
+// ── Navegacion
+function switchWeek(off) {
+  weekOff = off;
+  var tabs = document.querySelectorAll('.week-tab');
+  for (var i = 0; i < tabs.length; i++) {
+    tabs[i].className = 'week-tab ' + (i === off ? 'active' : 'inactive');
+  }
+  loadWeek();
+}
+
+function switchView(v) {
+  curView = v;
+  document.getElementById('vt-agenda').className  = 'view-tab' + (v === 'agenda'  ? ' active' : '');
+  document.getElementById('vt-resumen').className = 'view-tab' + (v === 'resumen' ? ' active' : '');
+  document.getElementById('box-section').style.display        = (v === 'agenda')  ? 'flex'  : 'none';
+  document.getElementById('slots-container').style.display    = (v === 'agenda')  ? 'flex'  : 'none';
+  document.getElementById('overview-container').style.display = (v === 'resumen') ? 'block' : 'none';
+  if (v === 'resumen') renderOverview();
+}
+
+function selectDay(i) { selDay = i; renderDayTabs(); renderBoxTabs(); renderSlots(); }
+function selectBox(i) { selBox = i; renderBoxTabs(); renderSlots(); }
+
+// ── Render
+function renderAll() { renderDayTabs(); renderBoxTabs(); renderSlots(); if (curView === 'resumen') renderOverview(); }
+
+function renderDayTabs() {
+  var mon = getMonday(weekOff);
+  var html = '';
+  for (var i = 0; i < DAYS.length; i++) {
+    var dt = dayDate(mon, i);
+    var tc = isToday(mon, i) ? ' today' : '';
+    var ac = (selDay === i) ? ' active' : '';
+    html += '<button class="day-tab' + ac + '" onclick="selectDay(' + i + ')">' +
+            '<div class="day-short">' + DAYS[i].s + '</div>' +
+            '<div class="day-num' + tc + '">' + dt.getDate() + '</div>' +
+            '</button>';
+  }
+  document.getElementById('day-tabs').innerHTML = html;
+}
+
+function renderBoxTabs() {
+  var html = '';
+  for (var i = 0; i < BOXES.length; i++) {
+    var c = countBox(selDay, i);
+    var pct = Math.round((c.ocupado / 15) * 100);
+    var ac = (selBox === i) ? ' active' : '';
+    html += '<button class="box-tab' + ac + '" onclick="selectBox(' + i + ')">' +
+            '<div class="box-tab-name">' + BOXES[i] + '</div>' +
+            '<div class="box-tab-count">' + c.ocupado + '/15 ocupados</div>' +
+            '<div class="box-progress"><div class="box-progress-fill" style="width:' + pct + '%"></div></div>' +
+            '</button>';
+  }
+  document.getElementById('box-section').innerHTML = html;
+}
+
+function renderSlots() {
+  var el = document.getElementById('slots-container');
+  if (!weekData) { el.innerHTML = '<div class="loading-msg">Cargando...</div>'; return; }
+  var html = '';
+  for (var si = 0; si < SLOTS.length; si++) {
+    var slot = getSlot(selDay, selBox, si);
+    var st = slot.status || 'libre';
+    var inner = '';
+    if (slot.patient) {
+      inner = '<div class="slot-patient">' + esc(slot.patient) + '</div>';
+      if (slot.rut)        inner += '<div class="slot-sub">RUT: ' + esc(slot.rut) + '</div>';
+      else if (slot.note)  inner += '<div class="slot-sub">' + esc(slot.note) + '</div>';
+    } else {
+      inner = '<div class="slot-label">' + ST_LBL[st] + '</div>';
+    }
+    html += '<button class="slot-btn ' + st + '" onclick="openModal(' + selDay + ',' + selBox + ',' + si + ')">' +
+            '<div class="slot-time">' + SLOTS[si] + '</div>' +
+            '<div class="slot-dot"></div>' +
+            '<div class="slot-info">' + inner + '</div>' +
+            '<div class="slot-arrow">&#8250;</div>' +
+            '</button>';
+  }
+  el.innerHTML = html;
+}
+
+function renderOverview() {
+  var oc = document.getElementById('overview-container');
+  if (!weekData) { oc.innerHTML = '<div class="loading-msg">Cargando...</div>'; return; }
+  var mon = getMonday(weekOff);
+  var html = '';
+  for (var b = 0; b < BOXES.length; b++) {
+    html += '<div class="ov-box-label">' + BOXES[b] + '</div><div class="overview-grid">';
+    html += '<div class="ov-header"><div></div>';
+    for (var di = 0; di < DAYS.length; di++) {
+      var dt = dayDate(mon, di);
+      html += '<div>' + DAYS[di].s + '<br><span style="font-size:9px;font-weight:400;">' + dt.getDate() + '</span></div>';
+    }
+    html += '</div>';
+    for (var si = 0; si < SLOTS.length; si++) {
+      html += '<div class="ov-row"><div class="ov-time">' + SLOTS[si] + '</div>';
+      for (var di2 = 0; di2 < 5; di2++) {
+        var sl = getSlot(di2, b, si);
+        var st2 = sl.status || 'libre';
+        var ttl = sl.patient ? sl.patient : ST_LBL[st2];
+        html += '<div class="ov-cell ' + st2 + '" title="' + esc(ttl) + '" onclick="ovTap(' + di2 + ',' + b + ',' + si + ')"></div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  oc.innerHTML = html;
+}
+
+function ovTap(d, b, s) { switchView('agenda'); selectDay(d); selectBox(b); openModal(d, b, s); }
+
+function esc(str) {
+  var s = String(str || '');
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Modal
+function openModal(d, b, s) {
+  modalState = {d:d, b:b, s:s};
+  var slot = getSlot(d, b, s);
+  var mon  = getMonday(weekOff);
+  var dt   = dayDate(mon, d);
+  document.getElementById('modal-ctx').textContent  = DAYS[d].f + ' ' + dt.getDate() + ' - Box ' + (b + 1);
+  document.getElementById('modal-time').textContent = SLOTS[s];
+  document.getElementById('modal-end').textContent  = 'hasta ' + (SLOTS[s + 1] || '13:00');
+  document.getElementById('f-patient').value = slot.patient || '';
+  document.getElementById('f-rut').value     = slot.rut     || '';
+  document.getElementById('f-note').value    = slot.note    || '';
+  selStatus(slot.status || 'libre');
+  document.getElementById('modal').classList.add('open');
+  setTimeout(function() { document.getElementById('f-patient').focus(); }, 350);
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  modalState = null;
+}
+
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('modal')) closeModal();
+}
+
+function selStatus(st) {
+  formSt = st;
+  var opts = ['libre', 'ocupado', 'bloqueado'];
+  for (var i = 0; i < opts.length; i++) {
+    var btn = document.getElementById('opt-' + opts[i]);
+    btn.className = 'status-opt ' + opts[i] + (opts[i] === st ? ' sel' : '');
+  }
+}
+
+function saveSlot() {
+  if (!modalState || !weekData) return;
+  var d = modalState.d, b = modalState.b, s = modalState.s;
+  weekData[d][b][s] = {
+    status:  formSt,
+    patient: document.getElementById('f-patient').value.trim(),
+    rut:     document.getElementById('f-rut').value.trim(),
+    note:    document.getElementById('f-note').value.trim()
+  };
+  closeModal(); renderAll(); persistWeek(); showToast('Guardado');
+}
+
+function clearSlot() {
+  if (!modalState || !weekData) return;
+  weekData[modalState.d][modalState.b][modalState.s] = emptySlot();
+  closeModal(); renderAll(); persistWeek(); showToast('Limpiado');
+}
+
+// ── Toast
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { t.classList.remove('show'); }, 1800);
+}
+
+// ── Teclado
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Enter' &&
+      document.getElementById('modal').classList.contains('open') &&
+      e.target.tagName !== 'TEXTAREA') {
+    e.preventDefault();
+    saveSlot();
+  }
+});
+
+// ── Init
+loadWeek();
+</script>
+</body>
+</html>
