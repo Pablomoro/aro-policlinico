@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ARO HPM">
+<meta name="theme-color" content="#0c4a6e">
+<title>ARO - Puerto Montt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; }
+body { font-family: 'DM Sans', system-ui, sans-serif; background: #f0f9ff; }
+:root {
+  --primary: #0e7490; --primary-dark: #0c4a6e; --primary-light: #e0f2fe;
+  --asig-bg: #eff6ff; --asig-border: #93c5fd; --asig-text: #1e40af;
+  --libre-bg: #f8fafc; --libre-border: #e2e8f0; --libre-text: #94a3b8;
+  --admin-color: #f59e0b;
+  --wa: #25d366;
+}
+#app { max-width: 480px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Header */
+.header { background: var(--primary-dark); color: white; padding: 16px 20px 0; flex-shrink: 0; }
+.header-top { display: flex; align-items: flex-start; justify-content: space-between; }
+.header-sub   { font-size: 10px; opacity: .55; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 2px; }
+.header-title { font-size: 17px; font-weight: 800; }
+.header-meta  { font-size: 11px; opacity: .45; margin-top: 3px; }
+.admin-btn { background: rgba(255,255,255,.12); border: 1.5px solid rgba(255,255,255,.2); border-radius: 8px; color: white; padding: 6px 10px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; transition: all .2s; flex-shrink: 0; margin-top: 2px; }
+.admin-btn.active { background: var(--admin-color); border-color: var(--admin-color); }
+.week-tabs { display: flex; gap: 8px; margin-top: 14px; }
+.week-tab { flex: 1; padding: 9px 0; border-radius: 8px 8px 0 0; border: none; cursor: pointer; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; transition: all .2s; }
+.week-tab.active   { background: #f0f9ff; color: var(--primary-dark); }
+.week-tab.inactive { background: rgba(255,255,255,.09); color: rgba(255,255,255,.4); }
+
+/* Admin banner */
+.admin-banner { background: var(--admin-color); color: white; font-size: 12px; font-weight: 700; text-align: center; padding: 7px 14px; letter-spacing: .5px; flex-shrink: 0; display: none; }
+.admin-banner.show { display: block; }
+
+/* Day tabs */
+.day-tabs { background: white; border-bottom: 1px solid #e0f2fe; display: flex; flex-shrink: 0; }
+.day-tab { flex: 1; padding: 10px 4px 8px; border: none; background: transparent; cursor: pointer; border-bottom: 3px solid transparent; transition: all .15s; }
+.day-tab.active { border-bottom-color: var(--primary); }
+.day-short { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: #94a3b8; }
+.day-tab.active .day-short { color: var(--primary); }
+.day-num { font-size: 14px; font-weight: 700; color: #cbd5e1; margin-top: 2px; }
+.day-tab.active .day-num { color: var(--primary-dark); }
+.day-num.today { background: #e0f2fe; color: var(--primary); border-radius: 4px; padding: 0 4px; }
+
+/* Box tabs */
+.box-tabs { display: flex; gap: 8px; padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
+.box-tab { flex: 1; padding: 9px 8px; border-radius: 10px; border: 2px solid #e2e8f0; background: white; cursor: pointer; text-align: left; transition: all .15s; }
+.box-tab.active { border-color: var(--primary); background: var(--primary-light); }
+.box-tab-name  { font-size: 12px; font-weight: 700; color: #94a3b8; }
+.box-tab.active .box-tab-name { color: var(--primary); }
+.box-tab-count { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+.box-bar { height: 3px; background: #e2e8f0; border-radius: 2px; margin-top: 5px; overflow: hidden; }
+.box-bar-fill { height: 100%; background: var(--primary); border-radius: 2px; transition: width .3s; }
+
+/* WhatsApp bar (admin only) */
+.wa-bar { background: white; border-bottom: 1px solid #e2e8f0; padding: 10px 14px; flex-shrink: 0; display: none; }
+.wa-bar.show { display: block; }
+.wa-bar-title { font-size: 10px; font-weight: 700; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+.wa-cards { display: flex; flex-direction: column; gap: 6px; }
+.wa-card { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: #f0fdf4; border-radius: 10px; border: 1.5px solid #86efac; }
+.wa-doc-name { flex: 1; font-size: 13px; font-weight: 600; color: #166534; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wa-doc-detail { font-size: 11px; color: #4ade80; margin-top: 1px; }
+.wa-send-btn { display: flex; align-items: center; gap: 5px; background: var(--wa); color: white; border: none; border-radius: 8px; padding: 7px 12px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; flex-shrink: 0; transition: all .15s; }
+.wa-send-btn:active { transform: scale(.97); }
+.wa-empty { font-size: 13px; color: #94a3b8; text-align: center; padding: 4px 0; }
+
+/* Slots */
+.slots { flex: 1; overflow-y: auto; padding: 10px 14px 28px; display: flex; flex-direction: column; gap: 5px; -webkit-overflow-scrolling: touch; }
+.slot-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 11px; border: 1.5px solid; transition: transform .1s; }
+.slot-row.clickable { cursor: pointer; }
+.slot-row.clickable:active { transform: scale(.99); }
+.slot-row.libre { background: var(--libre-bg); border-color: var(--libre-border); }
+.slot-row.asig  { background: var(--asig-bg);  border-color: var(--asig-border); }
+.slot-time { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; min-width: 42px; }
+.slot-row.libre .slot-time { color: #94a3b8; }
+.slot-row.asig  .slot-time { color: var(--asig-text); }
+.slot-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.slot-row.libre .slot-dot { background: #cbd5e1; }
+.slot-row.asig  .slot-dot { background: #3b82f6; }
+.slot-info { flex: 1; min-width: 0; }
+.slot-doc  { font-size: 13px; font-weight: 600; color: var(--asig-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot-free { font-size: 13px; color: #cbd5e1; }
+.slot-arrow { font-size: 16px; color: #cbd5e1; }
+.slot-lock  { font-size: 14px; opacity: .25; }
+
+/* PIN Modal */
+.pin-overlay { position: fixed; inset: 0; background: rgba(12,74,110,.92); display: none; align-items: center; justify-content: center; z-index: 300; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.pin-overlay.open { display: flex; animation: fadeIn .2s; }
+.pin-box { background: white; border-radius: 20px; padding: 32px 28px 28px; width: 300px; text-align: center; animation: popIn .25s cubic-bezier(.32,.72,0,1); }
+@keyframes popIn { from { transform:scale(.9);opacity:0 } to { transform:scale(1);opacity:1 } }
+.pin-title { font-size: 18px; font-weight: 800; color: var(--primary-dark); margin-bottom: 6px; }
+.pin-sub   { font-size: 13px; color: #94a3b8; margin-bottom: 24px; }
+.pin-dots  { display: flex; justify-content: center; gap: 12px; margin-bottom: 28px; }
+.pin-dot   { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #e2e8f0; background: white; transition: all .15s; }
+.pin-dot.filled { background: var(--primary); border-color: var(--primary); }
+.pin-dot.error  { background: #ef4444; border-color: #ef4444; animation: shake .3s; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+.pin-pad { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.pin-key { padding: 16px; border-radius: 12px; border: 1.5px solid #e2e8f0; background: #f8fafc; font-size: 20px; font-weight: 700; color: #0f172a; cursor: pointer; font-family: 'DM Mono', monospace; transition: all .1s; }
+.pin-key:active { background: var(--primary-light); border-color: var(--primary); transform: scale(.95); }
+.pin-key.del { font-size: 16px; color: #94a3b8; }
+.pin-cancel { margin-top: 14px; width: 100%; padding: 12px; border-radius: 11px; border: none; background: transparent; color: #94a3b8; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+/* Edit Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: flex-end; z-index: 200; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.modal-overlay.open { display: flex; animation: fadeIn .2s; }
+@keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+.modal-sheet { background: white; border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; margin: 0 auto; padding: 0 20px 40px; max-height: 88vh; overflow-y: auto; animation: slideUp .25s cubic-bezier(.32,.72,0,1); -webkit-overflow-scrolling: touch; }
+@keyframes slideUp { from { transform:translateY(100%) } to { transform:translateY(0) } }
+.modal-handle { width: 36px; height: 4px; background: #e2e8f0; border-radius: 2px; margin: 14px auto 20px; }
+.modal-ctx  { font-size: 11px; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+.modal-time { font-family: 'DM Mono', monospace; font-size: 32px; font-weight: 500; color: var(--primary-dark); line-height: 1; }
+.modal-end  { font-size: 12px; color: #94a3b8; margin-top: 2px; margin-bottom: 22px; }
+.field-label { font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 1px; text-transform: uppercase; display: block; margin-bottom: 8px; }
+.field-input { width: 100%; padding: 13px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 15px; font-family: inherit; outline: none; transition: border-color .15s; background: white; -webkit-appearance: none; }
+.field-input:focus { border-color: var(--primary); }
+.field-input::placeholder { color: #cbd5e1; }
+.saved-label { font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 1px; text-transform: uppercase; display: block; margin: 18px 0 10px; }
+.saved-list  { display: flex; flex-direction: column; gap: 6px; }
+.saved-item  { display: flex; align-items: center; gap: 10px; padding: 11px 14px; background: #f8fafc; border-radius: 10px; border: 1.5px solid #e2e8f0; }
+.saved-name  { flex: 1; font-size: 14px; font-weight: 600; color: #334155; cursor: pointer; }
+.saved-use   { font-size: 12px; color: var(--primary); font-weight: 700; cursor: pointer; padding: 2px 6px; }
+.saved-del   { font-size: 16px; color: #cbd5e1; cursor: pointer; padding: 2px 4px; }
+.modal-actions { display: flex; gap: 8px; margin-top: 24px; }
+.btn-sec    { flex: 1; padding: 13px; border-radius: 11px; border: 1.5px solid #e2e8f0; background: white; color: #94a3b8; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.btn-prim   { flex: 2; padding: 13px; border-radius: 11px; border: none; background: var(--primary); color: white; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.btn-prim:active { transform: scale(.99); }
+.btn-danger { flex: 1; padding: 13px; border-radius: 11px; border: 1.5px solid #fca5a5; background: white; color: #ef4444; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+/* WA phone modal */
+.wa-modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: flex-end; z-index: 250; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.wa-modal.open { display: flex; animation: fadeIn .2s; }
+.wa-modal-sheet { background: white; border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; margin: 0 auto; padding: 0 20px 40px; animation: slideUp .25s cubic-bezier(.32,.72,0,1); }
+.wa-modal-title { font-size: 17px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+.wa-modal-sub   { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+.wa-preview { background: #f0fdf4; border-radius: 12px; padding: 14px; border: 1px solid #86efac; font-size: 13px; color: #166534; line-height: 1.6; margin-bottom: 20px; white-space: pre-wrap; max-height: 180px; overflow-y: auto; }
+.wa-btn-send { width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--wa); color: white; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.wa-btn-send:active { transform: scale(.99); }
+.wa-btn-cancel { width: 100%; padding: 12px; margin-top: 8px; border-radius: 12px; border: none; background: transparent; color: #94a3b8; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+.toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: var(--primary-dark); color: white; padding: 8px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; z-index: 400; pointer-events: none; opacity: 0; transition: opacity .2s; white-space: nowrap; }
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="header-sub">Hospital de Puerto Montt</div>
+        <div class="header-title">Policlinico Alto Riesgo Obstetrico</div>
+        <div class="header-meta">08:00 - 13:00 &middot; 20 min/turno &middot; 3 boxes</div>
+      </div>
+      <button class="admin-btn" id="admin-btn" onclick="toggleAdmin()">&#x1F512; Admin</button>
+    </div>
+    <div class="week-tabs">
+      <button class="week-tab active"   onclick="switchWeek(0)">Semana Actual</button>
+      <button class="week-tab inactive" onclick="switchWeek(1)">Proxima Semana</button>
+    </div>
+  </div>
+
+  <div class="admin-banner" id="admin-banner">
+    &#x270F;&#xFE0F; Modo administrador &mdash; <span onclick="cerrarAdmin()" style="cursor:pointer;text-decoration:underline;">Cerrar sesion</span>
+  </div>
+
+  <div class="day-tabs" id="day-tabs"></div>
+  <div class="box-tabs"  id="box-tabs"></div>
+
+  <!-- WhatsApp bar: visible solo en modo admin -->
+  <div class="wa-bar" id="wa-bar">
+    <div class="wa-bar-title">&#x1F4F2; Notificar por WhatsApp &mdash; <span id="wa-day-label"></span></div>
+    <div class="wa-cards" id="wa-cards"></div>
+  </div>
+
+  <div class="slots" id="slots"></div>
+</div>
+
+<!-- PIN Modal -->
+<div class="pin-overlay" id="pin-overlay">
+  <div class="pin-box">
+    <div class="pin-title">Acceso administrador</div>
+    <div class="pin-sub">Ingresa el PIN de 4 digitos</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="pinPress('1')">1</button>
+      <button class="pin-key" onclick="pinPress('2')">2</button>
+      <button class="pin-key" onclick="pinPress('3')">3</button>
+      <button class="pin-key" onclick="pinPress('4')">4</button>
+      <button class="pin-key" onclick="pinPress('5')">5</button>
+      <button class="pin-key" onclick="pinPress('6')">6</button>
+      <button class="pin-key" onclick="pinPress('7')">7</button>
+      <button class="pin-key" onclick="pinPress('8')">8</button>
+      <button class="pin-key" onclick="pinPress('9')">9</button>
+      <button class="pin-key" style="visibility:hidden"></button>
+      <button class="pin-key" onclick="pinPress('0')">0</button>
+      <button class="pin-key del" onclick="pinDel()">&#9003;</button>
+    </div>
+    <button class="pin-cancel" onclick="closePinModal()">Cancelar</button>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="modal" onclick="closeOutside(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-ctx"  id="modal-ctx"></div>
+    <div class="modal-time" id="modal-time"></div>
+    <div class="modal-end"  id="modal-end"></div>
+    <label class="field-label">Medico</label>
+    <input class="field-input" id="f-doc" type="text" placeholder="Dr(a). Apellido, Nombre" autocomplete="off" autocorrect="off">
+    <span class="saved-label" id="saved-lbl" style="display:none">Medicos frecuentes</span>
+    <div class="saved-list" id="saved-list"></div>
+    <div class="modal-actions">
+      <button class="btn-danger" id="btn-quitar" onclick="quitarDoc()" style="display:none">Quitar</button>
+      <button class="btn-sec"    onclick="closeModal()">Cancelar</button>
+      <button class="btn-prim"   onclick="guardarDoc()">Asignar</button>
+    </div>
+  </div>
+</div>
+
+<!-- WhatsApp send modal -->
+<div class="wa-modal" id="wa-modal" onclick="closeWaOutside(event)">
+  <div class="wa-modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="wa-modal-title" id="wa-modal-title"></div>
+    <div class="wa-modal-sub">Revisa el mensaje antes de enviar</div>
+    <div class="wa-preview" id="wa-preview"></div>
+    <button class="wa-btn-send" onclick="abrirWhatsApp()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.555 4.122 1.528 5.858L0 24l6.335-1.505A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.369l-.36-.214-3.727.885.916-3.618-.235-.372A9.818 9.818 0 012.182 12C2.182 6.58 6.58 2.182 12 2.182S21.818 6.58 21.818 12 17.42 21.818 12 21.818z"/></svg>
+      Copiar mensaje y abrir WhatsApp
+    </button>
+    <button class="wa-btn-cancel" onclick="closeWaModal()">Cancelar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── PIN
+var ADMIN_PIN = '2581';
+var isAdmin   = false;
+var pinBuffer = '';
+
+function toggleAdmin() {
+  if (isAdmin) { cerrarAdmin(); return; }
+  pinBuffer = '';
+  updatePinDots();
+  document.getElementById('pin-overlay').classList.add('open');
+}
+function closePinModal() {
+  document.getElementById('pin-overlay').classList.remove('open');
+  pinBuffer = ''; updatePinDots();
+}
+function pinPress(d) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += d; updatePinDots();
+  if (pinBuffer.length === 4) setTimeout(checkPin, 150);
+}
+function pinDel() { pinBuffer = pinBuffer.slice(0,-1); updatePinDots(); }
+function updatePinDots() {
+  for (var i=0;i<4;i++) {
+    document.getElementById('pd'+i).className = 'pin-dot'+(i<pinBuffer.length?' filled':'');
+  }
+}
+function checkPin() {
+  if (pinBuffer === ADMIN_PIN) {
+    isAdmin = true; closePinModal();
+    document.getElementById('admin-banner').classList.add('show');
+    document.getElementById('admin-btn').classList.add('active');
+    document.getElementById('admin-btn').innerHTML = '&#x1F513; Admin';
+    document.getElementById('wa-bar').classList.add('show');
+    render(); showToast('Modo administrador activado');
+  } else {
+    for (var i=0;i<4;i++) document.getElementById('pd'+i).className='pin-dot error';
+    setTimeout(function(){ pinBuffer=''; updatePinDots(); }, 700);
+  }
+}
+function cerrarAdmin() {
+  isAdmin = false;
+  document.getElementById('admin-banner').classList.remove('show');
+  document.getElementById('admin-btn').classList.remove('active');
+  document.getElementById('admin-btn').innerHTML = '&#x1F512; Admin';
+  document.getElementById('wa-bar').classList.remove('show');
+  render(); showToast('Sesion cerrada');
+}
+
+// ── Constantes
+var SLOTS = [];
+for (var _i=0;_i<15;_i++) {
+  var _m=8*60+_i*20;
+  SLOTS.push((_m/60<10?'0':'')+Math.floor(_m/60)+':'+(_m%60<10?'0':'')+_m%60);
+}
+var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+var DAYS  = [{s:'LUN',f:'Lunes'},{s:'MAR',f:'Martes'},{s:'MIE',f:'Miercoles'},{s:'JUE',f:'Jueves'},{s:'VIE',f:'Viernes'}];
+var BOXES = ['Box 1','Box 2','Box 3'];
+
+// ── Estado
+var weekOff  = 0;
+var selDay   = clampDay(new Date().getDay()-1);
+var selBox   = 0;
+var weekData = null;
+var mCtx     = null;
+var waCtx    = null;   // {docName, message}
+var toastTmr = null;
+
+function clampDay(d){ return d<0?0:d>4?4:d; }
+
+// ── Fechas
+function getMonday(off) {
+  var d=new Date(), day=d.getDay();
+  d.setDate(d.getDate()+(day===0?-6:1-day)+off*7);
+  d.setHours(0,0,0,0); return d;
+}
+function dayDate(mon,i){ var d=new Date(mon.getTime()); d.setDate(d.getDate()+i); return d; }
+function isToday(mon,i){
+  var d=dayDate(mon,i),t=new Date();
+  return d.getDate()===t.getDate()&&d.getMonth()===t.getMonth()&&d.getFullYear()===t.getFullYear();
+}
+function weekKey(mon){ return 'aro-v2:'+mon.toISOString().slice(0,10); }
+function listKey()   { return 'aro-v2:medicos'; }
+
+// ── Datos
+function emptyWeek(){
+  var w={};
+  for(var d=0;d<5;d++){w[d]={};for(var b=0;b<3;b++){w[d][b]=[];for(var s=0;s<15;s++)w[d][b].push('');}}
+  return w;
+}
+function loadWeek(){
+  weekData=null; render();
+  try{ var r=localStorage.getItem(weekKey(getMonday(weekOff))); weekData=r?JSON.parse(r):emptyWeek(); }
+  catch(e){ weekData=emptyWeek(); }
+  render();
+}
+function saveWeek(){ try{ localStorage.setItem(weekKey(getMonday(weekOff)),JSON.stringify(weekData)); }catch(e){} }
+function getSlot(d,b,s){
+  if(!weekData||!weekData[d]||!weekData[d][b]) return '';
+  return weekData[d][b][s]||'';
+}
+function countAsig(d,b){
+  var n=0;
+  if(!weekData||!weekData[d]||!weekData[d][b]) return n;
+  for(var s=0;s<15;s++) if(weekData[d][b][s]) n++;
+  return n;
+}
+
+// Médicos frecuentes
+function getMedicos(){ try{var r=localStorage.getItem(listKey());return r?JSON.parse(r):[];}catch(e){return [];} }
+function saveMedicos(l){ try{localStorage.setItem(listKey(),JSON.stringify(l));}catch(e){} }
+function addMedico(name){
+  name=name.trim(); if(!name) return;
+  var l=getMedicos().filter(function(n){return n!==name;});
+  l.unshift(name); if(l.length>15)l=l.slice(0,15); saveMedicos(l);
+}
+function delMedico(name){ saveMedicos(getMedicos().filter(function(n){return n!==name;})); }
+
+// ── WhatsApp logic
+// Construye un mapa: nombre_medico -> [{box, slot, time}]
+function buildDaySchedule(day) {
+  var map = {};
+  if (!weekData) return map;
+  for (var b=0;b<3;b++) {
+    for (var s=0;s<15;s++) {
+      var doc = getSlot(day,b,s);
+      if (!doc) continue;
+      if (!map[doc]) map[doc] = [];
+      map[doc].push({box:b, slot:s, time:SLOTS[s]});
+    }
+  }
+  return map;
+}
+
+function buildMessage(docName, turns, day) {
+  var mon = getMonday(weekOff);
+  var dt  = dayDate(mon, day);
+  var fecha = DAYS[day].f + ' ' + dt.getDate() + ' de ' + MESES[dt.getMonth()];
+  var msg = 'Hola ' + docName + ', te informamos tu agenda en el Policlinico ARO del Hospital de Puerto Montt para el dia de hoy:\n\n';
+  msg += '📅 ' + fecha + '\n\n';
+  // Agrupar por box
+  var byBox = {};
+  for (var i=0;i<turns.length;i++) {
+    var t = turns[i];
+    if (!byBox[t.box]) byBox[t.box] = [];
+    byBox[t.box].push(t.time);
+  }
+  for (var b=0;b<3;b++) {
+    if (!byBox[b]) continue;
+    msg += '🏥 ' + BOXES[b] + '\n';
+    for (var j=0;j<byBox[b].length;j++) {
+      var end = SLOTS[SLOTS.indexOf(byBox[b][j])+1] || '13:00';
+      msg += '   ' + byBox[b][j] + ' - ' + end + '\n';
+    }
+    msg += '\n';
+  }
+  msg += 'Cualquier cambio sera comunicado oportunamente.\nPoliclinico ARO - Hospital de Puerto Montt';
+  return msg;
+}
+
+function renderWaBar() {
+  var mon = getMonday(weekOff);
+  var dt  = dayDate(mon, selDay);
+  document.getElementById('wa-day-label').textContent = DAYS[selDay].f + ' ' + dt.getDate();
+  var cards = document.getElementById('wa-cards');
+  var map   = buildDaySchedule(selDay);
+  var docs  = Object.keys(map);
+  if (docs.length === 0) {
+    cards.innerHTML = '<div class="wa-empty">No hay medicos asignados para este dia</div>';
+    return;
+  }
+  var html = '';
+  for (var i=0;i<docs.length;i++) {
+    var name   = docs[i];
+    var turns  = map[name];
+    var total  = turns.length;
+    var boxes  = [];
+    var bset   = {};
+    for (var j=0;j<turns.length;j++) { if(!bset[turns[j].box]){bset[turns[j].box]=1;boxes.push(BOXES[turns[j].box]);} }
+    html += '<div class="wa-card">' +
+            '<div>' +
+              '<div class="wa-doc-name">'+esc(name)+'</div>' +
+              '<div class="wa-doc-detail">'+total+' turnos &middot; '+boxes.join(', ')+'</div>' +
+            '</div>' +
+            '<button class="wa-send-btn" onclick="prepararWa(\''+esc(name)+'\')">' +
+              '<svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.555 4.122 1.528 5.858L0 24l6.335-1.505A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.369l-.36-.214-3.727.885.916-3.618-.235-.372A9.818 9.818 0 012.182 12C2.182 6.58 6.58 2.182 12 2.182S21.818 6.58 21.818 12 17.42 21.818 12 21.818z"/></svg>' +
+              'Enviar' +
+            '</button>' +
+            '</div>';
+  }
+  cards.innerHTML = html;
+}
+
+function prepararWa(docName) {
+  var map   = buildDaySchedule(selDay);
+  var turns = map[docName];
+  if (!turns) return;
+  var msg = buildMessage(docName, turns, selDay);
+  waCtx = {docName: docName, message: msg};
+  document.getElementById('wa-modal-title').textContent = 'Mensaje para ' + docName;
+  document.getElementById('wa-preview').textContent = msg;
+  document.getElementById('wa-modal').classList.add('open');
+}
+
+function abrirWhatsApp() {
+  if (!waCtx) return;
+  var msg = waCtx.message;
+
+  // 1. Copiar al portapapeles
+  function copiarYAbrir() {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(msg).then(function() {
+        showToast('Mensaje copiado — pégalo en WhatsApp');
+      }).catch(function() {
+        copiarFallback();
+      });
+    } else {
+      copiarFallback();
+    }
+    // 2. Abrir WhatsApp (sin texto en URL — más confiable)
+    setTimeout(function() {
+      window.open('whatsapp://', '_blank');
+    }, 300);
+    closeWaModal();
+  }
+
+  function copiarFallback() {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = msg;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Mensaje copiado — pégalo en WhatsApp');
+    } catch(e) {
+      showToast('Copia el mensaje manualmente');
+    }
+  }
+
+  copiarYAbrir();
+}
+
+function closeWaModal() { document.getElementById('wa-modal').classList.remove('open'); waCtx = null; }
+function closeWaOutside(e){ if(e.target===document.getElementById('wa-modal')) closeWaModal(); }
+
+// ── Navegacion
+function switchWeek(off){
+  weekOff=off;
+  var tabs=document.querySelectorAll('.week-tab');
+  for(var i=0;i<tabs.length;i++) tabs[i].className='week-tab '+(i===off?'active':'inactive');
+  loadWeek();
+}
+function selectDay(i){ selDay=i; renderDayTabs(); renderBoxTabs(); renderSlots(); if(isAdmin) renderWaBar(); }
+function selectBox(i){ selBox=i; renderBoxTabs(); renderSlots(); }
+
+// ── Render
+function render(){ renderDayTabs(); renderBoxTabs(); renderSlots(); if(isAdmin) renderWaBar(); }
+
+function renderDayTabs(){
+  var mon=getMonday(weekOff), html='';
+  for(var i=0;i<DAYS.length;i++){
+    var dt=dayDate(mon,i), tc=isToday(mon,i)?' today':'';
+    html+='<button class="day-tab'+(selDay===i?' active':'')+'" onclick="selectDay('+i+')">' +
+          '<div class="day-short">'+DAYS[i].s+'</div>' +
+          '<div class="day-num'+tc+'">'+dt.getDate()+'</div></button>';
+  }
+  document.getElementById('day-tabs').innerHTML=html;
+}
+
+function renderBoxTabs(){
+  var html='';
+  for(var i=0;i<BOXES.length;i++){
+    var n=countAsig(selDay,i), pct=Math.round(n/15*100);
+    html+='<button class="box-tab'+(selBox===i?' active':'')+'" onclick="selectBox('+i+')">' +
+          '<div class="box-tab-name">'+BOXES[i]+'</div>' +
+          '<div class="box-tab-count">'+n+'/15 asignados</div>' +
+          '<div class="box-bar"><div class="box-bar-fill" style="width:'+pct+'%"></div></div>' +
+          '</button>';
+  }
+  document.getElementById('box-tabs').innerHTML=html;
+}
+
+function renderSlots(){
+  var el=document.getElementById('slots');
+  if(!weekData){ el.innerHTML='<div style="padding:40px;text-align:center;color:#94a3b8">Cargando...</div>'; return; }
+  var html='';
+  for(var si=0;si<SLOTS.length;si++){
+    var doc=getSlot(selDay,selBox,si);
+    var cls=doc?'asig':'libre';
+    var clickable=isAdmin?' clickable':'';
+    var onclick=isAdmin?' onclick="openModal('+selDay+','+selBox+','+si+')"':'';
+    html+='<div class="slot-row '+cls+clickable+'"'+onclick+'>' +
+          '<div class="slot-time">'+SLOTS[si]+'</div>' +
+          '<div class="slot-dot"></div>' +
+          '<div class="slot-info">'+(doc?'<div class="slot-doc">'+esc(doc)+'</div>':'<div class="slot-free">'+(isAdmin?'Sin asignar':'&mdash;')+'</div>')+'</div>' +
+          (isAdmin?'<div class="slot-arrow">&#8250;</div>':'<div class="slot-lock">&#x1F512;</div>') +
+          '</div>';
+  }
+  el.innerHTML=html;
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── Modal edicion
+function openModal(d,b,s){
+  if(!isAdmin) return;
+  mCtx={d:d,b:b,s:s};
+  var doc=getSlot(d,b,s), mon=getMonday(weekOff), dt=dayDate(mon,d);
+  document.getElementById('modal-ctx').textContent  = DAYS[d].f+' '+dt.getDate()+' - '+BOXES[b];
+  document.getElementById('modal-time').textContent = SLOTS[s];
+  document.getElementById('modal-end').textContent  = 'hasta '+(SLOTS[s+1]||'13:00');
+  document.getElementById('f-doc').value = doc||'';
+  document.getElementById('btn-quitar').style.display = doc?'block':'none';
+  renderSaved();
+  document.getElementById('modal').classList.add('open');
+  setTimeout(function(){ document.getElementById('f-doc').focus(); },350);
+}
+
+function renderSaved(){
+  var list=getMedicos(), lbl=document.getElementById('saved-lbl'), el=document.getElementById('saved-list');
+  if(!list.length){ lbl.style.display='none'; el.innerHTML=''; return; }
+  lbl.style.display='block';
+  var html='';
+  for(var i=0;i<list.length;i++){
+    var n=list[i];
+    html+='<div class="saved-item">' +
+          '<div class="saved-name" onclick="usarMedico(\''+esc(n)+'\')">'+esc(n)+'</div>' +
+          '<div class="saved-use"  onclick="usarMedico(\''+esc(n)+'\')">Usar</div>' +
+          '<div class="saved-del"  onclick="borrarMedico(\''+esc(n)+'\')">&#x2715;</div>' +
+          '</div>';
+  }
+  el.innerHTML=html;
+}
+
+function usarMedico(name){ document.getElementById('f-doc').value=name; guardarDoc(); }
+function borrarMedico(name){ delMedico(name); renderSaved(); }
+
+function guardarDoc(){
+  if(!mCtx||!isAdmin) return;
+  var name=document.getElementById('f-doc').value.trim();
+  if(!name) return;
+  weekData[mCtx.d][mCtx.b][mCtx.s]=name;
+  addMedico(name); saveWeek(); closeModal(); render();
+  showToast('Asignado: '+name);
+}
+function quitarDoc(){
+  if(!mCtx||!isAdmin) return;
+  weekData[mCtx.d][mCtx.b][mCtx.s]='';
+  saveWeek(); closeModal(); render(); showToast('Turno liberado');
+}
+function closeModal(){ document.getElementById('modal').classList.remove('open'); mCtx=null; }
+function closeOutside(e){ if(e.target===document.getElementById('modal')) closeModal(); }
+
+// ── Toast
+function showToast(msg){
+  var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTmr); toastTmr=setTimeout(function(){ t.classList.remove('show'); },2000);
+}
+
+// ── Teclado
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){ closeModal(); closePinModal(); closeWaModal(); }
+  if(e.key==='Enter'&&document.getElementById('modal').classList.contains('open')){ e.preventDefault(); guardarDoc(); }
+});
+
+// ── Init
+loadWeek();
+</script>
+</body>
+</html>
